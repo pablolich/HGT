@@ -1,0 +1,11 @@
+#### Oct 13,2021
+
+Stefano's notes: 
+When A is symetric, we don't have caotic or oscilatory dynamics, so we can use 
+a Lemka holko algorithm or something like that (see notes on assembly of 
+Theoretical ecology class), such that the instead of integrating the system we
+can just find the optimal strategy or whatever and therefore determine the
+final equilibrium much quicker than one would do by numerically integrating. 
+
+Today I have found that when I don't impose HGT or enzyme budget what happens is that one or two species always dominate, and the competition matrix becomes more and more intense, until the elements are the same and it is non-singular. Basically what is happening is that all species are becoming more and more similar as time goes by. I expect HGT to accelerate this proces, but also more coexistence when I include enzyme budget allocation. 
+
