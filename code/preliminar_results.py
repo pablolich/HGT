@@ -44,9 +44,33 @@ def interaction_matrix(P):
     '''
     return -(P@P.T + 1)/2
 
+def invasion_criteria(r_i, A, x):
+    #Select interaction coefficients that affect the new species
+    a_i_vec = A[-1, 0:-1]
+    return r_i + np.dot(a_i_vec, x)
+
 def lotka_volterra(t, x, A, r):
     return np.diag(x)@(r + A@x)
 
+def enzyme_budget():
+    return None
+
+def remove_extinct(abundances, preferences, A, tol):
+    '''
+    Remove extinct species from abundance vector, preferences and interaction
+    matrices
+    '''
+    #Identify indices of extinct species
+    ind_ext = np.where(abundances < tol)
+    #Remove from abundance vector
+    abundances = np.delete(abundances, ind_ext)
+    #Remove rows corresponding to extinct species from preference matrix
+    preferences = np.delete(preferences, ind_ext, axis = 0)
+    #Remove rows and columns from interaction matrix
+    A = np.delete(A, ind_ext, axis = 0)
+    B = np.delet(A, ind_ext
+
+    return list(abundances, preferences, A)
 
 def main(argv):
     '''Main function'''
@@ -56,25 +80,56 @@ def main(argv):
     v_first = first_species(m)
     #Create interaction matrix
     A = -1
-    #Assign growthrates
+    #Assign growth rates
     r = 1
     #Find equilibrium
     x_star = -A*r
     #Set number of species
     n_sp = 1
+    #Initialize interaction matrix
     P = v_first
+    #Set abundance threshold
+    ab_thresh = 1e-6
+    #Start iteration
     while n_sp <= m:
         #Select randomly a species from the community
         sp_ind = np.random.randint(n_sp)
-        #Induce a mutation of 3% in selected species
+        #Create a new mutated species by inducing a perturbation of 3% in one 
+        #of the resource consumption rates of the selected species
         v_new = mutate(v_first, 0.03)
-        #Add v_new to matrix P
-        P = np.hstack([P, v_new])
-        #Find equilibrium
-        x_star = -np.linalg.inv(A)@r
-        #Create mutation
-        #Run dynamics until equilibrium is reached
-        sol = solve_ivp(lotka_voltera, t_span, x0, args = arguments)
+        #Add v_new, the new consumer vector to matrix P
+        P_new = np.hstack([P, v_new])
+        #Create new matrix of interactions
+        A_new = interaction_matrix(P_new)
+        #Check if the new species can invade
+        inv = invasion_criteria(r, A_new, x_star)
+        if inv:
+            #In the case that it can invade, add it to the community 
+            P = P_new
+            A = interaction_matrix(P)
+            #Find new equilibrium
+            x_star_new = -np.linalg.inv(A)@r
+            #Check for stability
+            eigen_vals_new = np.linalg.eig_vals(A)
+            #When the community is feasible and stable, keep adding invaders
+            if ( np.all(x_star_new > 0) and np.all(eigen_vals_new.real < 0) ):
+                #Set x_star to the equilibrium reached in the presecne of
+                #the invader
+                x_star = x_star_new
+            else:
+                #When either of those conditions is not met, numerically 
+                #integrate the dynamics to check what is the final community 
+                #state after invasion
+                #Introduce invader at low initial abundance
+                x0 = np.vstack([x_star, 1e-5])
+                #Run dynamics until equilibrium is reached
+                sol = solve_ivp(lotka_voltera, t_span, x0, args = arguments)
+                #Get rid of extinct species (those below abundance threshold)
+
+        else: 
+            #Invasibility criterion is not satisfied, so come up with another 
+            #mutant that can invade
+            continue
 
 
     return 0
