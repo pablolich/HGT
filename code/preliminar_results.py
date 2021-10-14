@@ -116,6 +116,17 @@ def check_constant(sol_mat, tol):
     const = np.all(last_10 < tol)
     return const
 
+def check_singularity(A):
+    '''
+    Check if A is a singular matrix
+    '''
+    #Calculate determinant
+    det_A = abs(np.linalg.det(A))
+    if det_A < 1e-16:
+        return True
+    else:
+        return False
+
 def main(argv):
     '''Main function'''
     #Number of metabolites 
@@ -143,11 +154,18 @@ def main(argv):
         sp_ind = np.random.randint(n_sp)
         #Create a new mutated species by inducing a perturbation of 3% in one 
         #of the resource consumption rates of the selected species
-        v_new = mutate(v_first, 0.03)
+        v_new = mutate(v_first, 0.2)
         #Add v_new, the new consumer vector to matrix P
         P_new = np.vstack([P, v_new])
         #Create new matrix of interactions
         A_new = interaction_matrix(P_new)
+        #Check weth or not A_new is singular 
+        singular = check_singularity(A_new)
+        while singular:
+            v_new = mutate(v_first, 0.03)
+            P_new = np.vstack([P, v_new])
+            A_new = interaction_matrix(P_new)
+            singular = check_singularity(A_new)
         #Check if the new species can invade
         inv = invasion_criteria(r, A_new, x_star)
         print('inv criteria: ', inv)

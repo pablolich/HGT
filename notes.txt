@@ -9,3 +9,9 @@ final equilibrium much quicker than one would do by numerically integrating.
 
 Today I have found that when I don't impose HGT or enzyme budget what happens is that one or two species always dominate, and the competition matrix becomes more and more intense, until the elements are the same and it is non-singular. Basically what is happening is that all species are becoming more and more similar as time goes by. I expect HGT to accelerate this proces, but also more coexistence when I include enzyme budget allocation. 
 
+
+#### Oct 14,2021
+
+Implemented a singularity check for A, and found that I cannot build a community through radiation if I only invade with weakly perturbed species, due to A being 'numerically' singular. Therefore, I am going to start with a randomly assembled community, and start introducing mutations there. 
+Alternativelly I could find the minimum perturbation that ensures that the determinant of the matrix, when I calculate it as the variance covariance matrix of a trait vctor, is higher than Stefano's tolerance. Or the minimum number of preferences that needs to be perturbed a minimum of x% in order to ensure a high enough determinant. 
+
