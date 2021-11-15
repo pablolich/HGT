@@ -1,4 +1,7 @@
 def sample_preferences(m):
+    '''
+    Sample preferences from a normal distribution and normalize to 1
+    '''
     vec = np.random.normal(0, 1, m)
     norm = np.linalg.norm(vec)
     return  vec/norm
@@ -64,12 +67,8 @@ def number_sp(x):
         n = 1
     return n
 
-
 def lotka_volterra(t, x, A, r):
     return (np.diag(x)@(r.reshape(len(r), 1) + A@x.reshape(len(r), 1))).T[0]
-
-def enzyme_budget():
-    return None
 
 def remove_extinct(abundances, preferences, A, tol):
     '''
@@ -108,3 +107,15 @@ def check_singularity(A):
         return True
     else:
         return False
+
+### Functions for consumer resource model ### 
+
+def consumer_resource(t, x, C, r, z, K, b):
+    N, R = x
+    return [np.diag(r)@(C@R - z), K - b*R - np.diag(R)@(C.T@N)]
+
+def cost_model(C):
+    '''
+    Calculate cost of each species in the community
+    '''
+    return np.sum(C, axis = 0)

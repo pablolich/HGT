@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-__appname__ = '[App_name_here]'
+__appname__ = '[assembly.py]'
 __author__ = 'Pablo Lechon (plechon@ucm.es)'
 __version__ = '0.0.1'
 
@@ -20,9 +20,9 @@ def main(argv):
     '''Main function'''
     #Number of metabolites 
     m = 10
-    #Sample first species and normalize
+    #Sample a vector of metabolic preferences with norm 1
     v_first = sample_preferences(m)
-    #Create interaction matrix
+    #Create interaction matrix (for now it is just one species)
     A = -1
     #Assign growth rates
     r = 1

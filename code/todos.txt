@@ -1,0 +1,6 @@
+#### Nov 15,2021
+
+1. Start with a community instead of adding species one by one. Then apply HGT
+2. Code the case of a C-R model. 
+3. Need to prove global stability for consumer resource with chemostat dynamics
+
