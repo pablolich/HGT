@@ -10,6 +10,7 @@ import sys
 import numpy as np
 from scipy.integrate import solve_ivp
 import matplotlib.pylab as plt
+from functions import *
 
 ## CONSTANTS ##
 
@@ -19,112 +20,78 @@ import matplotlib.pylab as plt
 def main(argv):
     '''Main function'''
     #Number of metabolites 
-    m = 10
-    #Sample a vector of metabolic preferences with norm 1
-    v_first = sample_preferences(m)
+    m = 50
+    #Number of species
+    s = 5
+    #Preference matrix
+    P = np.zeros(shape=(s, m))
+    #Sample a matrix of metabolic preferences with norm 1
+    for i in range(s):
+        P[i,:] = sample_preferences(m)
     #Create interaction matrix (for now it is just one species)
-    A = -1
+    import ipdb; ipdb.set_trace(context = 20)
+    A = interaction_matrix(P)
     #Assign growth rates
-    r = 1
+    r = np.ones(s)
     #Find equilibrium
     x_star = find_equilibria(r, A)
-    #Set number of species
-    n_sp = number_sp(x_star)
-    #Initialize interaction matrix
-    P = v_first
-    #Set abundance threshold
-    ab_thresh = 1e-6
     #Initialize number of species vector
     n_sp_vec = list()
     #Start iteration
-    while n_sp <= m:
-        print(n_sp)
+    while s <= m:
+        print('Number of species: ', s)
         #Select randomly a species from the community
-        sp_ind = np.random.randint(n_sp)
-        #Create a new mutated species by inducing a perturbation of 3% in one 
-        #of the resource consumption rates of the selected species
-        v_new = mutate(v_first, 0.2)
-        #Add v_new, the new consumer vector to matrix P
-        P_new = np.vstack([P, v_new])
-        #Create new matrix of interactions
-        A_new = interaction_matrix(P_new)
-        #Check weth or not A_new is singular 
-        singular = check_singularity(A_new)
-        while singular:
-            v_new = mutate(v_first, 0.03)
+        sp_ind = np.random.randint(s)
+        singular = True
+        non_invasive = True
+        while singular or non_invasive:
+            #Create a new mutated species by inducing a perturbation of 3% in 
+            #one of the resource consumption rates of the selected species
+            v_new = mutate(P[sp_ind,:], 0.03)
+            #Add v_new, the new consumer vector to matrix P
             P_new = np.vstack([P, v_new])
+            #Create new matrix of interactions
             A_new = interaction_matrix(P_new)
+            #Check weth or not A_new is singular 
             singular = check_singularity(A_new)
-        #Check if the new species can invade
-        inv = invasion_criteria(r, A_new, x_star)
-        print('inv criteria: ', inv)
-        if inv > 0:
-            #In the case that it can invade, add it to the community 
-            P = P_new
-            A = interaction_matrix(P)
-            #Update number of species
-            n_sp += 1
-            n_sp_vec.append(n_sp)
-            #Find new equilibrium
-            x_star_new = find_equilibria(np.ones(n_sp), A)
-            #Calculate eigenvalues of A
-            eigen_vals_new = find_eigenvals(A)
-            #Check feasibility and stability
-            try:
-                feasible = np.all(x_star_new > 0) 
-            except:
-                plt.plot(n_sp_vec)
-                plt.show()
-                raise Exception('A is singular, end loop')
-            stable = np.all(eigen_vals_new.real < 0)
-            if feasible and stable:
-                #Set x_star to the equilibrium reached in the presecne of
-                #the invader
-                x_star = x_star_new
-            else:
-                #Keep integrating and pruning until a feasible and stable
-                #equilibrium is reached
-                #Introduce invader at low initial abundance
-                x0 = np.hstack([x_star, 1e-3])
-                t_span = [0, 20000]
-                while not (feasible and stable):
-                    #Integrate until solutions are constant 
-                    constant_sol = False
-                    #Put a maximum integration times
-                    runs = 0
-                    while not constant_sol and runs < 10:
-                        #Run dynamics until putative equilibrium is reached
-                        sol = solve_ivp(lotka_volterra, t_span, x0, 
-                                        method = 'BDF', 
-                                        args = (A,  np.ones(n_sp)))
-                        #Check if solution is constant
-                        constant_sol = check_constant(sol.y, tol = 1e-3)
-                        #Get rid of extinct species (those below abundance 
-                        #threshold)
-                        print('Endpoint abundances: ', sol.y[:, -1])
-                        x_star, P, A = remove_extinct(sol.y[:,-1], P, A, 
-                                                      ab_thresh)
-                        print('Dimensions of A: ', A.shape)
-                        #Set initial conditions for next integration with the 
-                        #endpoints of the previous one
-                        x0 = x_star
-                        n_sp = len(x_star)
-                        runs += 1
-                        print('Integration number: ', runs)
-                    #Check feasibility and stability
-                    feasible = np.all(x_star > 0) 
-                    eigen_vals_new = np.linalg.eigvals(A)
-                    stable = np.all(eigen_vals_new.real < 0)
-                    n_sp_new = len(x_star)
-                #We pruned the community succesfully to a feasible and stable
-                #state
-                #Record species number
-                n_sp_vec.append(len(x_star))
-                print(n_sp_vec)
-        else: 
-            #Invasibility criterion is not satisfied, so come up with another 
-            #mutant that can invade
-            continue
+            non_invasive = bool(invasion_criteria(r, A_new, x_star))
+        #The mutant can invade and matrix a is non-singular; add it to the 
+        #community
+        P = P_new
+        A = A_new
+        #Update number of species
+        s += 1
+        #Also on the vector
+        n_sp_vec.append(s)
+        #Find new equilibrium
+        x_star_new = find_equilibria(np.ones(s), A)
+        #Check feasibility
+        feasible = np.all(x_star_new >= 0) 
+        if feasible:
+            #Assuming that feasibility imply local stability
+            x_star = x_star_new
+        else:
+            #Keep integrating and pruning until a feasible (and thus,  
+            #stable) equilibrium is reached
+            #Introduce invader (that we know can invade) at low initial 
+            #abundance
+            x0 = np.hstack([x_star, 1e-3])
+            t_span = [0, 2000]
+            #Integrate until solutions are constant 
+            sol = interate_n(lotka_volterra, 10, t_span, x0, tol=1e-9)
+            #Check if the invader is still went extinct
+            if sol[-1, -1] < 0
+                #If invader goes extinct, terminate this loop
+                break
+            x_star = sol[:, -1]
+            s = len(x_star)
+            #Feasibility and (local) stability are ensured by 
+            #integration. 
+            #Record species number
+            n_sp_vec.append(len(x_star))
+            print(n_sp_vec)
+        #We pruned the community succesfully to a feasible and 
+        #stable state
     return 0
 
 ## CODE ##

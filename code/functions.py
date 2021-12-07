@@ -1,3 +1,7 @@
+import numpy as np
+
+### Functions for generalized lotka volterra model ### 
+
 def sample_preferences(m):
     '''
     Sample preferences from a normal distribution and normalize to 1
@@ -11,15 +15,13 @@ def mutate(v, p):
     Generate a single mutation in one of the elements of the preference vector
     by perturbing an element by a percentage
     '''
-    #Select randomly an index to perturb
-    ind = np.random.randint(len(v))
     #Sample perturbation 
-    delta = np.random.uniform(1 - p, 1 + p)
+    delta = np.random.uniform(1 - p, 1 + p, size = len(v))
     #Apply perturbation
-    v_mut = np.copy(v) 
-    v_mut[ind] = delta*v[ind]
-    norm = np.linalg.norm(v_mut)
-    return v_mut/norm
+    v_mut = v*delta
+    #Normalize again
+    v_mut_norm = v_mut/np.linalg.norm(v_mut)
+    return v_mut_norm
 
 def interaction_matrix(P):
     '''
@@ -52,13 +54,6 @@ def find_equilibria(r, A):
         except: 
             x_star = None
     return x_star
-
-def find_eigenvals(A):
-    try:
-        eigs = np.linalg.eigvals(A)
-    except:
-        eigs = A
-    return eigs
 
 def number_sp(x):
     try:
@@ -108,6 +103,7 @@ def check_singularity(A):
     else:
         return False
 
+
 ### Functions for consumer resource model ### 
 
 def consumer_resource(t, x, C, r, z, K, b):
@@ -119,3 +115,38 @@ def cost_model(C):
     Calculate cost of each species in the community
     '''
     return np.sum(C, axis = 0)
+
+def assembly_cr(C, r, z, K, b):
+    '''
+    Assembly a community by subsequently adding successful invaders 
+    '''
+    
+    assembly_cr(C, np.ones(m), z, np.ones(m), np.ones(m))
+    
+### General functions ### 
+
+def integrate_n(fun, tot_runs, t_span, x0, tol):
+    '''
+    Integrate until solutions are constant
+    '''
+    #Integrate until solutions are constant 
+    constant_sol = False
+    #Put a maximum integration times
+    run_i = 0
+    while not constant_sol and run_i < tot_runs:
+        #Run dynamics until putative equilibrium is reached
+        sol = solve_ivp(fun, t_span, x0, 
+                        method = 'BDF', 
+                        args = (A,  np.ones(n_sp)))
+        #Prepare initial conditions for next integration
+        x0 = sol.y[:, -1]
+        #Check if solution is constant
+        constant_sol = check_constant(sol.y, tol)
+        #Set to 0 species that are below threshold
+        #Get indices of species with abundance below tolerance
+        ext_ind = np.where(sol.y[:,-1] < tol)[0]
+        #Set these indices to 0 in the abundance vector for the next iteration
+        x0[ext_ind] = 0
+        runs += 1
+        print('Integration number: ', runs)
+    return sol

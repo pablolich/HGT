@@ -1,6 +1,11 @@
 #### Nov 15,2021
 
 1. Start with a community instead of adding species one by one. Then apply HGT
-2. Code the case of a C-R model. 
 3. Need to prove global stability for consumer resource with chemostat dynamics
+
+#### Dec 06,2021
+
+1. Challenge assumption that feasibility implies global stability.
+2. TMRW: Start running and debugging the code. Then start thinking about HGT
+
 
