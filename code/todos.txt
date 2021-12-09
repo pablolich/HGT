@@ -5,7 +5,10 @@
 
 #### Dec 06,2021
 
-1. Challenge assumption that feasibility implies global stability.
 2. TMRW: Start running and debugging the code. Then start thinking about HGT
+
+#### Dec 07,2021
+
+1. Learn lemke hosom theorem to avoid integrating dynamics. 
 
 

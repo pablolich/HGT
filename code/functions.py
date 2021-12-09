@@ -1,4 +1,8 @@
 import numpy as np
+from scipy.integrate import solve_ivp
+import matplotlib.pyplot as plt
+%matplitlib inline
+
 
 ### Functions for generalized lotka volterra model ### 
 
@@ -31,29 +35,14 @@ def interaction_matrix(P):
     return -(P@P.T + 1)/2
 
 def invasion_criteria(r_i, A, x):
-    #Select interaction coefficients that affect the new species
-    try:
-        a_i_vec = A[-1, 0:-1]
-    except:
-        #If A is a scalar because we are in the first iteration
-        a_i_vec = A
-    inv = r_i + np.dot(a_i_vec, x)
-    try:
-        if len(inv) > 1:
-            import ipdb; ipdb.set_trace(context = 20)
-    except:
-        inv = r_i + np.dot(a_i_vec, x)
-    return inv 
+    #Select last row of A: the effect every species (but invader) have on the
+    #invader
+    effects_on_invader = A[-1, 0:-1] #Note we are leaving out A_ii
+    inv = r_i + np.dot(effects_on_invader, x)
+    return inv > 0
 
 def find_equilibria(r, A):
-    if isinstance(A, float) or isinstance(A, int):
-        x_star = -1/A*r
-    else:
-        try:
-            x_star = (-np.linalg.inv(A)@r.reshape(len(r), 1)).T[0]
-        except: 
-            x_star = None
-    return x_star
+    return (-np.linalg.inv(A)@r.reshape(len(r), 1)).T[0]
 
 def number_sp(x):
     try:
@@ -87,9 +76,10 @@ def check_constant(sol_mat, tol):
     '''
     #Get differences between solutions
     diff_sol = sol_mat[:, 1:] - sol_mat[:, 0:-1]
-    #Get last 10 timepoints
-    last_10 = diff_sol[:, -1:-10:-1]
-    const = np.all(last_10 < tol)
+    #Get last 3 timepoints
+    last_3 = diff_sol[:, -1:-3:-1]
+    #Note that we only impose three because there are no oscillations here. 
+    const = np.all(abs(last_3) < tol)
     return const
 
 def check_singularity(A):
@@ -120,12 +110,11 @@ def assembly_cr(C, r, z, K, b):
     '''
     Assembly a community by subsequently adding successful invaders 
     '''
-    
     assembly_cr(C, np.ones(m), z, np.ones(m), np.ones(m))
     
 ### General functions ### 
 
-def integrate_n(fun, tot_runs, t_span, x0, tol):
+def integrate_n(fun, tot_runs, t_span, x0, A, n_sp, tol):
     '''
     Integrate until solutions are constant
     '''
@@ -140,13 +129,17 @@ def integrate_n(fun, tot_runs, t_span, x0, tol):
                         args = (A,  np.ones(n_sp)))
         #Prepare initial conditions for next integration
         x0 = sol.y[:, -1]
-        #Check if solution is constant
-        constant_sol = check_constant(sol.y, tol)
-        #Set to 0 species that are below threshold
         #Get indices of species with abundance below tolerance
-        ext_ind = np.where(sol.y[:,-1] < tol)[0]
-        #Set these indices to 0 in the abundance vector for the next iteration
+        ext_ind = np.where(x0 < tol)[0]
+        #Set to 0 species that are below threshold
         x0[ext_ind] = 0
-        runs += 1
-        print('Integration number: ', runs)
+        #Check if solution is constant
+        constant_sol = check_constant(sol.y, 1e-6)
+        #Add 1 to the numer of iterations
+        run_i += 1
+        print('Integration number: ', run_i)
+        import ipdb; ipdb.set_trace(context = 20)
+        for i in range(n_sp):
+            plt.plot(sol.t, sol.y[i, :])
+        plt.show()
     return sol

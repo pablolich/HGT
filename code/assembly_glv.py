@@ -8,7 +8,6 @@ __version__ = '0.0.1'
 
 import sys
 import numpy as np
-from scipy.integrate import solve_ivp
 import matplotlib.pylab as plt
 from functions import *
 
@@ -29,7 +28,6 @@ def main(argv):
     for i in range(s):
         P[i,:] = sample_preferences(m)
     #Create interaction matrix (for now it is just one species)
-    import ipdb; ipdb.set_trace(context = 20)
     A = interaction_matrix(P)
     #Assign growth rates
     r = np.ones(s)
@@ -43,8 +41,8 @@ def main(argv):
         #Select randomly a species from the community
         sp_ind = np.random.randint(s)
         singular = True
-        non_invasive = True
-        while singular or non_invasive:
+        invasive = False
+        while singular or not invasive:
             #Create a new mutated species by inducing a perturbation of 3% in 
             #one of the resource consumption rates of the selected species
             v_new = mutate(P[sp_ind,:], 0.03)
@@ -54,7 +52,7 @@ def main(argv):
             A_new = interaction_matrix(P_new)
             #Check weth or not A_new is singular 
             singular = check_singularity(A_new)
-            non_invasive = bool(invasion_criteria(r, A_new, x_star))
+            invasive = invasion_criteria(1, A_new, x_star)
         #The mutant can invade and matrix a is non-singular; add it to the 
         #community
         P = P_new
@@ -78,9 +76,10 @@ def main(argv):
             x0 = np.hstack([x_star, 1e-3])
             t_span = [0, 2000]
             #Integrate until solutions are constant 
-            sol = interate_n(lotka_volterra, 10, t_span, x0, tol=1e-9)
+            sol = integrate_n(lotka_volterra, 10, t_span, x0, A, s, 
+                              tol=1e-9)
             #Check if the invader is still went extinct
-            if sol[-1, -1] < 0
+            if sol[-1, -1] < 0:
                 #If invader goes extinct, terminate this loop
                 break
             x_star = sol[:, -1]
@@ -89,7 +88,7 @@ def main(argv):
             #integration. 
             #Record species number
             n_sp_vec.append(len(x_star))
-            print(n_sp_vec)
+            pkint(n_sp_vec)
         #We pruned the community succesfully to a feasible and 
         #stable state
     return 0
