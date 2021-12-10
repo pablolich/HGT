@@ -92,6 +92,15 @@ def check_singularity(A):
     else:
         return False
 
+def prune_A(A, ext_ind):
+    '''
+    Remove extinct rows and columns from matrix A
+    '''
+    #Remove rows of extinct species
+    A_rows = np.delete(A, ext_ind, axis = 0)
+    A_cols = np.delete(A_rows, ext_ind, axis = 1)
+    return A_cols
+
 
 ### Functions for consumer resource model ### 
 

@@ -21,10 +21,13 @@ def main(argv):
     '''Main function'''
     #Number of metabolites 
     m = 200
-    tot_sim = 3
+    tot_sim = 200
     sim_i = 0
     df = pd.DataFrame(columns = ['ab', 'ab_hgt'])
+    eigen = list()
+    eigen_hgt = list()
     while sim_i < tot_sim:
+        print('\nSimulation number: ', sim_i)
         #Number of species
         s = 2
         #Preference matrix
@@ -44,7 +47,7 @@ def main(argv):
         n_sp_vec = list()
         n_sp_vec_hgt = list()
         #Start iteration
-        while len(ind_present) <= round(0.05*m):
+        while len(ind_present) <= round(0.2*m):
             invasive = False
             while not invasive:
                 #Select randomly a species from the community
@@ -102,9 +105,24 @@ def main(argv):
             #We pruned the community succesfully to a feasible and 
             #stable state
 
+        #Prune matrices A and A_hgt
+        ext_A = np.where(x_star == 0)[0]
+        Ap = prune_A(A, ext_A)
+        ext_A_hgt = np.where(x_star_hgt == 0)[0]
+        Ap_hgt = prune_A(A_hgt, ext_A_hgt)
+        eigen += list(np.linalg.eigvals(Ap))
+        eigen_hgt += list(np.linalg.eigvals(Ap_hgt))
         df_i = pd.DataFrame({'ab':n_sp_vec, 'ab_hgt':n_sp_vec_hgt})
         df = pd.concat([df, df_i])
         sim_i += 1
+        #Save eigenvalues
+        np.savetxt("../data/eigen.csv", eigen, delimiter = ',')
+        np.savetxt("../data/eigen_hgt.csv", eigen_hgt, delimiter = ',')
+        #Save mega dataframe
+        df.to_csv("../data/abundances.csv", sep = ',')
+    #Save eigenvalues
+    np.savetxt("../data/eigen.csv", eigen, delimiter = ',')
+    np.savetxt("../data/eigen_hgt.csv", eigen_hgt, delimiter = ',')
     #Save mega dataframe
     df.to_csv("../data/abundances.csv", sep = ',')
     return 0
