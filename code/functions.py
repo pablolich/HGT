@@ -124,8 +124,8 @@ def integrate_n(fun, tot_runs, t_span, x0, A, n_sp, tol):
     while not constant_sol and run_i < tot_runs:
         #Run dynamics until putative equilibrium is reached
         sol = solve_ivp(fun, t_span, x0, 
-                        method = 'BDF', 
-                        args = (A,  np.ones(n_sp)))
+                        method = 'RK45', 
+                        args = (A, np.ones(n_sp)))
         #Prepare initial conditions for next integration
         x0 = sol.y[:, -1]
         #Get indices of species with abundance below tolerance
@@ -137,3 +137,17 @@ def integrate_n(fun, tot_runs, t_span, x0, A, n_sp, tol):
         #Add 1 to the numer of iterations
         run_i += 1
     return sol
+
+def compute_h(x_star):
+    return np.outer(x_star, x_star)/sum(x_star)**2
+
+def hgt(H, x_star, C):
+    '''
+    Calculate the preference vectors of mutants as a result of a community 
+    wide horizontal gene transfer
+    '''
+    x_rel = x_star/sum(x_star)
+    H = (H + np.diag(1 - x_rel))@C
+    #Normalize 
+    H_norm = np.diag(1/np.linalg.norm(H, axis = 1))@H
+    return H_norm
