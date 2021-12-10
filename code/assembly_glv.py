@@ -19,7 +19,7 @@ from functions import *
 def main(argv):
     '''Main function'''
     #Number of metabolites 
-    m = 50
+    m = 200
     #Number of species
     s = 5
     #Preference matrix
@@ -33,16 +33,15 @@ def main(argv):
     r = np.ones(s)
     #Find equilibrium
     x_star = find_equilibria(r, A)
+    ind_present = np.where(x_star > 0)[0]
     #Initialize number of species vector
     n_sp_vec = list()
     #Start iteration
-    while s <= m:
-        print('Number of species: ', s)
-        #Select randomly a species from the community
-        sp_ind = np.random.randint(s)
-        singular = True
+    while len(ind_present) <= round(0.2*m):
         invasive = False
-        while singular or not invasive:
+        while not invasive:
+            #Select randomly a species from the community
+            sp_ind = np.random.choice(ind_present)
             #Create a new mutated species by inducing a perturbation of 3% in 
             #one of the resource consumption rates of the selected species
             v_new = mutate(P[sp_ind,:], 0.03)
@@ -51,7 +50,6 @@ def main(argv):
             #Create new matrix of interactions
             A_new = interaction_matrix(P_new)
             #Check weth or not A_new is singular 
-            singular = check_singularity(A_new)
             invasive = invasion_criteria(1, A_new, x_star)
         #The mutant can invade and matrix a is non-singular; add it to the 
         #community
@@ -59,8 +57,6 @@ def main(argv):
         A = A_new
         #Update number of species
         s += 1
-        #Also on the vector
-        n_sp_vec.append(s)
         #Find new equilibrium
         x_star_new = find_equilibria(np.ones(s), A)
         #Check feasibility
@@ -73,24 +69,30 @@ def main(argv):
             #stable) equilibrium is reached
             #Introduce invader (that we know can invade) at low initial 
             #abundance
-            x0 = np.hstack([x_star, 1e-3])
+            x0 = np.hstack([x_star, 1e-5])
             t_span = [0, 2000]
             #Integrate until solutions are constant 
             sol = integrate_n(lotka_volterra, 10, t_span, x0, A, s, 
-                              tol=1e-9)
+                              tol=1e-6)
             #Check if the invader is still went extinct
-            if sol[-1, -1] < 0:
+            if sol.y[-1, -1] < 0:
                 #If invader goes extinct, terminate this loop
                 break
-            x_star = sol[:, -1]
+            x_star = sol.y[:, -1]
             s = len(x_star)
+            #Get indices of species that are present
+            ind_present = np.where(x_star > 0)[0]
             #Feasibility and (local) stability are ensured by 
             #integration. 
             #Record species number
-            n_sp_vec.append(len(x_star))
-            pkint(n_sp_vec)
+            n_sp_vec.append(len(ind_present))
+            print('Number of coexisting species: ', len(ind_present),
+                  end = '\r')
         #We pruned the community succesfully to a feasible and 
         #stable state
+    import ipdb; ipdb.set_trace(context = 20)
+    plt.plot(np.arange(len(n_sp_vec)), n_sp_vec)
+    plt.show()
     return 0
 
 ## CODE ##

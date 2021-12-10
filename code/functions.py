@@ -19,9 +19,9 @@ def mutate(v, p):
     by perturbing an element by a percentage
     '''
     #Sample perturbation 
-    delta = np.random.uniform(1 - p, 1 + p, size = len(v))
+    delta = np.random.normal(0, p, size = len(v))
     #Apply perturbation
-    v_mut = v*delta
+    v_mut = v + delta
     #Normalize again
     v_mut_norm = v_mut/np.linalg.norm(v_mut)
     return v_mut_norm
@@ -136,9 +136,4 @@ def integrate_n(fun, tot_runs, t_span, x0, A, n_sp, tol):
         constant_sol = check_constant(sol.y, 1e-6)
         #Add 1 to the numer of iterations
         run_i += 1
-        print('Integration number: ', run_i)
-        import ipdb; ipdb.set_trace(context = 20)
-        for i in range(n_sp):
-            plt.plot(sol.t, sol.y[i, :])
-        plt.show()
     return sol
